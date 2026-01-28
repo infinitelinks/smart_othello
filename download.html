@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <title>Download Smart Othello</title>
     <meta name="theme-color" content="#070a10" />
+
     <style>
         :root {
             --bg0: #05070c;
@@ -41,10 +42,14 @@
                 linear-gradient(180deg, var(--bg0), var(--bg1));
             -webkit-text-size-adjust: 100%;
             touch-action: manipulation;
+
+            /* Mobile fit: allow full height + scroll if needed */
+            min-height: 100dvh;
+            padding: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 18px;
+            overflow: auto;
         }
 
         .card {
@@ -94,7 +99,7 @@
             letter-spacing: .2px;
             white-space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis;
+            text-overflow: ellipsis
         }
 
         .sub {
@@ -103,7 +108,7 @@
             color: var(--muted);
             white-space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis;
+            text-overflow: ellipsis
         }
 
         .btn {
@@ -252,15 +257,22 @@
     ------------------------------ */
         @media (max-width:520px) {
             body {
-                padding: 12px
+                padding: 12px;
+                display: block;
+                /* prevents “center cut off” on short screens */
+            }
+
+            .card {
+                width: 100%;
+                border-radius: 16px;
             }
 
             .head {
-                padding: 12px 12px
+                padding: 12px 12px;
             }
 
             .body {
-                padding: 12px
+                padding: 12px;
             }
 
             .logo {
@@ -277,9 +289,6 @@
                 display: none
             }
 
-            /* keep header clean on mobile */
-
-            /* Make primary action big + full width on mobile */
             .row.actions {
                 display: grid;
                 grid-template-columns: 1fr;
@@ -293,12 +302,6 @@
                 font-size: 13.5px;
             }
 
-            /* Keep small badges tidy */
-            .row.meta {
-                gap: 8px;
-            }
-
-            /* Better list spacing on small screens */
             ol {
                 margin-left: 18px
             }
@@ -340,7 +343,7 @@
                         If the download doesn’t start, open this page in Chrome and try again.
                     </div>
 
-                    <div class="row meta" style="margin-top:12px">
+                    <div class="row" style="margin-top:12px">
                         <span class="tag">Offline play supported</span>
                     </div>
                 </div>
@@ -350,7 +353,7 @@
                     <div class="small">
                         <ol>
                             <li>Download the APK.</li>
-                            <li>Open the file from your browser or Downloads app.</li>
+                            <li>Open the downloaded file from your browser or Downloads app.</li>
                             <li>If blocked: Settings → Security/Privacy → Install unknown apps → allow your browser/file
                                 manager.</li>
                             <li>Tap Install.</li>
@@ -374,7 +377,7 @@
 
     <script>
         (function () {
-            // Only show the Chrome hint on Android (no "device" text shown)
+            // Only show the Chrome hint on Android (no device text shown)
             const ua = navigator.userAgent || "";
             const isAndroid = /Android/i.test(ua);
             const androidNote = document.getElementById("androidNote");
