@@ -1,0 +1,1733 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>Smart Othello — Adaptive AI</title>
+
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#070a10" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+
+    <style>
+        :root {
+            --bg0: #05070c;
+            --bg1: #070a10;
+            --card: rgba(16, 24, 38, .62);
+            --stroke: rgba(255, 255, 255, .10);
+            --stroke2: rgba(255, 255, 255, .06);
+            --text: #eaf1ff;
+            --muted: #a7b7d6;
+
+            --accent: #79a8ff;
+            --accent2: #66f0c2;
+            --bad: #fb7185;
+
+            --boardA: #0d3b2e;
+            --boardB: #082a21;
+
+            --r: 18px;
+            --shadow: 0 18px 50px rgba(0, 0, 0, .45);
+            --shadow2: 0 12px 26px rgba(0, 0, 0, .35);
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html,
+        body {
+            height: 100%
+        }
+
+        body {
+            margin: 0;
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+            color: var(--text);
+            background:
+                radial-gradient(900px 600px at 15% -10%, rgba(121, 168, 255, .22), transparent 55%),
+                radial-gradient(900px 650px at 95% 0%, rgba(102, 240, 194, .14), transparent 58%),
+                radial-gradient(900px 650px at 60% 120%, rgba(251, 191, 36, .10), transparent 55%),
+                linear-gradient(180deg, var(--bg0), var(--bg1));
+            -webkit-text-size-adjust: 100%;
+            touch-action: manipulation;
+        }
+
+        .wrap {
+            max-width: 1150px;
+            margin: 0 auto;
+            padding: 16px 14px 24px;
+            display: grid;
+            gap: 14px;
+            grid-template-columns: 1.18fr .82fr;
+            align-items: start;
+        }
+
+        @media (max-width: 940px) {
+            .wrap {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .glass {
+            border: 1px solid var(--stroke);
+            background: var(--card);
+            backdrop-filter: blur(12px);
+            border-radius: var(--r);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .topbar {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 14px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0
+        }
+
+        .logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background:
+                radial-gradient(circle at 30% 30%, rgba(121, 168, 255, .95), rgba(121, 168, 255, .12) 56%, transparent 57%),
+                radial-gradient(circle at 70% 75%, rgba(102, 240, 194, .90), rgba(102, 240, 194, .10) 56%, transparent 57%),
+                linear-gradient(135deg, rgba(255, 255, 255, .10), rgba(255, 255, 255, 0));
+            box-shadow: 0 12px 22px rgba(0, 0, 0, .28);
+            flex: 0 0 auto;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 14px;
+            letter-spacing: .2px;
+            font-weight: 900;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .brand p {
+            margin: 2px 0 0;
+            font-size: 12px;
+            color: var(--muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, .10);
+            background: rgba(12, 18, 30, .55);
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 750;
+            user-select: none;
+        }
+
+        .btn {
+            appearance: none;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(12, 18, 30, .65);
+            color: var(--text);
+            border-radius: 14px;
+            padding: 10px 12px;
+            font-weight: 850;
+            font-size: 13px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            box-shadow: var(--shadow2);
+            transition: transform .12s ease, border-color .12s ease, background .12s ease, filter .12s ease;
+        }
+
+        .btn:hover {
+            border-color: rgba(121, 168, 255, .45);
+            background: rgba(16, 24, 38, .78);
+        }
+
+        .btn:active {
+            transform: scale(.98);
+        }
+
+        @media (hover:none) {
+            .btn:hover {
+                border-color: rgba(255, 255, 255, .12);
+                background: rgba(12, 18, 30, .65);
+            }
+        }
+
+        .btn.primary {
+            border-color: rgba(121, 168, 255, .45);
+            background: linear-gradient(180deg, rgba(121, 168, 255, .24), rgba(121, 168, 255, .14));
+        }
+
+        .btn.primary:hover {
+            border-color: rgba(121, 168, 255, .65);
+            filter: brightness(1.03);
+        }
+
+        .btn.danger {
+            border-color: rgba(251, 113, 133, .35);
+            background: rgba(251, 113, 133, .10);
+        }
+
+        .grid {
+            display: grid;
+            gap: 14px;
+        }
+
+        .card .hd {
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            border-bottom: 1px solid var(--stroke2);
+            background: linear-gradient(180deg, rgba(255, 255, 255, .05), transparent);
+        }
+
+        .card .hd .title {
+            font-size: 13px;
+            font-weight: 950;
+            letter-spacing: .2px;
+        }
+
+        .card .bd {
+            padding: 14px;
+        }
+
+        /* board */
+        .board-shell {
+            padding: 14px;
+        }
+
+        .board-meta {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .score {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, .08);
+            background: rgba(12, 18, 30, .55);
+            font-size: 13px;
+            font-weight: 950;
+        }
+
+        .disc {
+            width: 14px;
+            height: 14px;
+            border-radius: 999px;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .15), 0 10px 14px rgba(0, 0, 0, .25);
+        }
+
+        .disc.black {
+            background: radial-gradient(circle at 35% 30%, #5b5b5b, #080808 72%);
+        }
+
+        .disc.white {
+            background: radial-gradient(circle at 35% 30%, #ffffff, #cbd5e1 75%);
+        }
+
+        .status {
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, .08);
+            background: rgba(12, 18, 30, .50);
+            color: var(--muted);
+            font-size: 12.5px;
+            font-weight: 750;
+            flex: 1;
+            min-width: 220px;
+        }
+
+        .board-wrap {
+            aspect-ratio: 1 / 1;
+            width: min(640px, 100%);
+            margin: 0 auto;
+            border-radius: 24px;
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background:
+                radial-gradient(circle at 28% 24%, rgba(255, 255, 255, .08), transparent 55%),
+                radial-gradient(circle at 80% 80%, rgba(102, 240, 194, .10), transparent 55%),
+                linear-gradient(135deg, rgba(121, 168, 255, .10), rgba(0, 0, 0, 0)),
+                linear-gradient(180deg, rgba(0, 0, 0, .35), rgba(0, 0, 0, 0));
+            box-shadow: 0 18px 55px rgba(0, 0, 0, .55);
+            position: relative;
+        }
+
+        .board {
+            width: 100%;
+            height: 100%;
+            border-radius: 18px;
+            background: linear-gradient(180deg, var(--boardA), var(--boardB));
+            border: 1px solid rgba(255, 255, 255, .08);
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            position: relative;
+        }
+
+        .cell {
+            position: relative;
+            border: 1px solid rgba(11, 100, 76, .55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .cell:active {
+            filter: brightness(1.08);
+        }
+
+        .cell .hint {
+            width: 22%;
+            aspect-ratio: 1/1;
+            border-radius: 999px;
+            background: rgba(121, 168, 255, .28);
+            border: 1px solid rgba(121, 168, 255, .42);
+            box-shadow: 0 12px 26px rgba(0, 0, 0, .28);
+            opacity: 0;
+            transform: scale(.78);
+            transition: opacity .12s ease, transform .12s ease;
+            pointer-events: none;
+        }
+
+        .cell.hint-on .hint {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .piece {
+            width: 78%;
+            aspect-ratio: 1/1;
+            border-radius: 999px;
+            box-shadow:
+                inset 0 0 0 1px rgba(255, 255, 255, .14),
+                0 16px 28px rgba(0, 0, 0, .40);
+            transform: translateZ(0);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .piece.black {
+            background:
+                radial-gradient(circle at 30% 24%, rgba(255, 255, 255, .20), transparent 45%),
+                radial-gradient(circle at 78% 78%, rgba(255, 255, 255, .07), transparent 55%),
+                linear-gradient(180deg, #1e1e1e, #050505);
+        }
+
+        .piece.white {
+            background:
+                radial-gradient(circle at 30% 24%, rgba(0, 0, 0, .11), transparent 45%),
+                radial-gradient(circle at 78% 78%, rgba(0, 0, 0, .07), transparent 55%),
+                linear-gradient(180deg, #ffffff, #cbd5e1);
+        }
+
+        .flip {
+            animation: flip .24s ease;
+        }
+
+        @keyframes flip {
+            0% {
+                transform: rotateY(0deg) scale(1);
+            }
+
+            50% {
+                transform: rotateY(90deg) scale(1.03);
+            }
+
+            100% {
+                transform: rotateY(180deg) scale(1);
+            }
+        }
+
+        /* settings */
+        .controls {
+            display: grid;
+            gap: 14px;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        @media (max-width: 940px) {
+            .row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .field {
+            display: grid;
+            gap: 6px;
+        }
+
+        label {
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 900;
+        }
+
+        select,
+        input[type="range"] {
+            width: 100%;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, .10);
+            background: rgba(12, 18, 30, .55);
+            color: var(--text);
+            padding: 10px 12px;
+            font-weight: 850;
+            outline: none;
+        }
+
+        .toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, .10);
+            background: rgba(12, 18, 30, .55);
+            font-weight: 900;
+            font-size: 13px;
+            user-select: none;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .switch {
+            width: 46px;
+            height: 24px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .14);
+            border: 1px solid rgba(255, 255, 255, .14);
+            position: relative;
+            flex: 0 0 auto;
+        }
+
+        .knob {
+            width: 18px;
+            height: 18px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .85);
+            position: absolute;
+            top: 2px;
+            left: 3px;
+            transition: left .14s ease, background .14s ease;
+        }
+
+        .switch.on {
+            background: rgba(102, 240, 194, .18);
+            border-color: rgba(102, 240, 194, .35);
+        }
+
+        .switch.on .knob {
+            left: 24px;
+            background: rgba(102, 240, 194, .90);
+        }
+
+        .small {
+            font-size: 12px;
+            color: rgba(167, 183, 214, .92);
+            line-height: 1.5;
+        }
+
+        .kpi {
+            display: grid;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .kpi .row2 {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .kpi .tag {
+            padding: 8px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, .10);
+            background: rgba(12, 18, 30, .45);
+            font-size: 12px;
+            font-weight: 950;
+            color: var(--muted);
+        }
+
+        /* Install toast */
+        .installBar {
+            position: fixed;
+            left: 14px;
+            right: 14px;
+            bottom: 14px;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 12px 12px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(10, 14, 22, .70);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 18px 55px rgba(0, 0, 0, .55);
+            display: none;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 9997;
+        }
+
+        .installBar .txt {
+            font-size: 12.5px;
+            color: var(--muted);
+            font-weight: 850;
+            line-height: 1.35;
+        }
+
+        .installBar .right {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .installBar.show {
+            display: flex;
+        }
+
+        /* ------------------------------
+       Mobile UX: hide side features during play
+       Desktop stays unchanged
+    --------------------------------*/
+        .mobileOnly {
+            display: none;
+        }
+
+        .desktopOnly {
+            display: inline-flex;
+        }
+
+        @media (max-width: 940px) {
+            .desktopOnly {
+                display: none;
+            }
+
+            .mobileOnly {
+                display: inline-flex;
+            }
+
+            .wrap {
+                padding-bottom: 92px;
+            }
+
+            /* room for bottom bar */
+            .controls {
+                display: none;
+            }
+
+            /* hide right-side panels by default on mobile */
+            .pill {
+                display: none;
+            }
+
+            /* hide turn pill in topbar on mobile */
+            .board-wrap {
+                width: min(720px, 100%);
+            }
+
+            .actions {
+                gap: 8px;
+            }
+        }
+
+        /* Mobile bottom bar */
+        .mobileBar {
+            position: fixed;
+            left: 12px;
+            right: 12px;
+            bottom: 12px;
+            z-index: 9998;
+            display: none;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(10, 14, 22, .72);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 18px 55px rgba(0, 0, 0, .55);
+        }
+
+        @media (max-width: 940px) {
+            .mobileBar {
+                display: flex;
+            }
+        }
+
+        .mobileBar .left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }
+
+        .mobileBar .turn {
+            font-size: 12px;
+            font-weight: 950;
+            color: rgba(234, 241, 255, .95);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .mobileBar .miniStatus {
+            font-size: 11.5px;
+            font-weight: 800;
+            color: rgba(167, 183, 214, .92);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 56vw;
+        }
+
+        .mobileBar .right {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        /* Mobile sheet (Settings/Features) */
+        .sheetOverlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: none;
+            background: rgba(0, 0, 0, .55);
+            backdrop-filter: blur(2px);
+        }
+
+        .sheetOverlay.show {
+            display: block;
+        }
+
+        .sheet {
+            position: absolute;
+            left: 12px;
+            right: 12px;
+            bottom: 12px;
+            max-height: 78vh;
+            overflow: auto;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(10, 14, 22, .85);
+            backdrop-filter: blur(14px);
+            box-shadow: 0 22px 70px rgba(0, 0, 0, .65);
+            padding: 12px;
+        }
+
+        .sheetHead {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 6px 2px 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, .08);
+            margin-bottom: 10px;
+        }
+
+        .sheetHead .t {
+            font-size: 13px;
+            font-weight: 950;
+        }
+
+        .sheetGrid {
+            display: grid;
+            gap: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <div class="glass topbar">
+            <div class="brand">
+                <div class="logo" aria-hidden="true"></div>
+                <div style="min-width:0">
+                    <h1>Smart Othello</h1>
+                    <p>Adaptive AI that learns your habits — Installable PWA</p>
+                </div>
+            </div>
+
+            <div class="actions">
+                <span class="pill desktopOnly" id="turnPill">Turn: —</span>
+
+                <button class="btn desktopOnly" id="btnInstall" style="display:none">Install</button>
+                <button class="btn desktopOnly" id="btnUndo" title="Undo last full turn">Undo</button>
+                <button class="btn desktopOnly" id="btnPass" title="Pass if no moves">Pass</button>
+                <button class="btn primary desktopOnly" id="btnNew">New Game</button>
+
+                <button class="btn primary mobileOnly" id="btnMobileMenu">Menu</button>
+            </div>
+        </div>
+
+        <div class="glass card">
+            <div class="hd">
+                <div class="title">Board</div>
+                <div class="pill" id="hintPill">Hints: On</div>
+            </div>
+
+            <div class="board-shell">
+                <div class="board-meta">
+                    <div class="score">
+                        <div class="chip"><span class="disc black"></span> You (Black): <span id="scoreB">2</span></div>
+                        <div class="chip"><span class="disc white"></span> AI (White): <span id="scoreW">2</span></div>
+                    </div>
+                    <div class="status" id="status">Tap a highlighted square to place your disc.</div>
+                </div>
+
+                <div class="board-wrap">
+                    <div class="board" id="board" role="grid" aria-label="Othello board"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Desktop controls (kept same) -->
+        <div class="controls" id="controlsRoot">
+            <div class="glass card">
+                <div class="hd">
+                    <div class="title">Competitive Settings</div>
+                </div>
+                <div class="bd">
+                    <div class="row">
+                        <div class="field">
+                            <label for="difficulty">AI Difficulty</label>
+                            <select id="difficulty">
+                                <option value="1">Easy</option>
+                                <option value="2">Normal</option>
+                                <option value="3" selected>Smart</option>
+                                <option value="4">Hard</option>
+                                <option value="5">Expert</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="aiStyle">AI Style</label>
+                            <select id="aiStyle">
+                                <option value="balanced" selected>Balanced</option>
+                                <option value="aggressive">Aggressive</option>
+                                <option value="defensive">Defensive</option>
+                                <option value="counter">Counter-Your-Style</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="toggle" id="toggleLearn">
+                        <span>Adaptive learning (AI studies your moves)</span>
+                        <span class="switch on" id="learnSwitch" aria-hidden="true"><span class="knob"></span></span>
+                    </div>
+
+                    <div class="toggle" id="toggleHints">
+                        <span>Show move hints</span>
+                        <span class="switch on" id="hintsSwitch" aria-hidden="true"><span class="knob"></span></span>
+                    </div>
+
+                    <div class="toggle" id="toggleSound">
+                        <span>Sound effects</span>
+                        <span class="switch on" id="soundSwitch" aria-hidden="true"><span class="knob"></span></span>
+                    </div>
+
+                    <div class="field" style="margin-top:10px;">
+                        <label for="volume">Volume</label>
+                        <input id="volume" type="range" min="0" max="100" value="65" />
+                    </div>
+
+                    <div class="kpi">
+                        <div class="small"><b>AI notes your tendencies</b> (stored locally on this device):</div>
+                        <div class="row2">
+                            <div class="tag" id="kCorner">Corner: —</div>
+                            <div class="tag" id="kEdge">Edge: —</div>
+                            <div class="tag" id="kGreedy">Greedy flips: —</div>
+                            <div class="tag" id="kMob">Mobility: —</div>
+                        </div>
+                        <div class="small" style="margin-top:6px;">
+                            Want a reset? Use <b>Reset Learning</b> below.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass card">
+                <div class="hd">
+                    <div class="title">Tools</div>
+                </div>
+                <div class="bd grid">
+                    <button class="btn danger" id="btnResetLearn">Reset Learning</button>
+                    <div class="small">
+                        Notes:
+                        <ul style="margin:8px 0 0 16px; padding:0">
+                            <li>Adaptive learning never leaves your device (localStorage).</li>
+                            <li>“Counter-Your-Style” makes the AI exploit your habits.</li>
+                            <li>For best offline install: host on HTTPS (GitHub Pages works).</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass card">
+                <div class="hd">
+                    <div class="title">PWA Status</div>
+                </div>
+                <div class="bd">
+                    <div class="small" id="pwaStatus">Checking offline support…</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Install toast -->
+    <div class="installBar" id="installBar">
+        <div class="txt">
+            Install this game for a full-screen app experience with offline play.
+        </div>
+        <div class="right">
+            <button class="btn" id="btnInstallToast">Install</button>
+            <button class="btn" id="btnCloseToast">Not now</button>
+        </div>
+    </div>
+
+    <!-- Mobile bottom bar -->
+    <div class="mobileBar" id="mobileBar">
+        <div class="left">
+            <div class="turn" id="mTurn">Turn: —</div>
+            <div class="miniStatus" id="mStatus">—</div>
+        </div>
+        <div class="right">
+            <button class="btn" id="mUndo">Undo</button>
+            <button class="btn" id="mPass">Pass</button>
+            <button class="btn primary" id="mNew">New</button>
+        </div>
+    </div>
+
+    <!-- Mobile settings sheet -->
+    <div class="sheetOverlay" id="sheetOverlay" aria-hidden="true">
+        <div class="sheet" role="dialog" aria-modal="true" aria-label="Game menu">
+            <div class="sheetHead">
+                <div class="t">Game Menu</div>
+                <button class="btn" id="btnCloseSheet">Close</button>
+            </div>
+            <div class="sheetGrid" id="sheetContent"></div>
+        </div>
+    </div>
+
+    <script>
+        (() => {
+            // ------------------------------
+            // Core constants
+            // ------------------------------
+            const EMPTY = 0, BLACK = 1, WHITE = 2;
+            const DIRS = [
+                [-1, -1], [-1, 0], [-1, 1],
+                [0, -1], [0, 1],
+                [1, -1], [1, 0], [1, 1]
+            ];
+
+            const WEIGHTS = [
+                [120, -20, 20, 5, 5, 20, -20, 120],
+                [-20, -40, -5, -5, -5, -5, -40, -20],
+                [20, -5, 15, 3, 3, 15, -5, 20],
+                [5, -5, 3, 3, 3, 3, -5, 5],
+                [5, -5, 3, 3, 3, 3, -5, 5],
+                [20, -5, 15, 3, 3, 15, -5, 20],
+                [-20, -40, -5, -5, -5, -5, -40, -20],
+                [120, -20, 20, 5, 5, 20, -20, 120],
+            ];
+
+            // ------------------------------
+            // DOM
+            // ------------------------------
+            const elBoard = document.getElementById("board");
+            const elScoreB = document.getElementById("scoreB");
+            const elScoreW = document.getElementById("scoreW");
+            const elStatus = document.getElementById("status");
+            const elTurnPill = document.getElementById("turnPill");
+            const elHintPill = document.getElementById("hintPill");
+
+            const btnNew = document.getElementById("btnNew");
+            const btnPass = document.getElementById("btnPass");
+            const btnUndo = document.getElementById("btnUndo");
+
+            const difficultySel = document.getElementById("difficulty");
+            const aiStyleSel = document.getElementById("aiStyle");
+
+            const toggleHints = document.getElementById("toggleHints");
+            const hintsSwitch = document.getElementById("hintsSwitch");
+
+            const toggleSound = document.getElementById("toggleSound");
+            const soundSwitch = document.getElementById("soundSwitch");
+
+            const toggleLearn = document.getElementById("toggleLearn");
+            const learnSwitch = document.getElementById("learnSwitch");
+
+            const volumeRange = document.getElementById("volume");
+
+            const kCorner = document.getElementById("kCorner");
+            const kEdge = document.getElementById("kEdge");
+            const kGreedy = document.getElementById("kGreedy");
+            const kMob = document.getElementById("kMob");
+
+            const btnResetLearn = document.getElementById("btnResetLearn");
+            const pwaStatus = document.getElementById("pwaStatus");
+
+            // Install UI
+            const btnInstall = document.getElementById("btnInstall");
+            const installBar = document.getElementById("installBar");
+            const btnInstallToast = document.getElementById("btnInstallToast");
+            const btnCloseToast = document.getElementById("btnCloseToast");
+
+            // Mobile UI
+            const btnMobileMenu = document.getElementById("btnMobileMenu");
+            const mobileBar = document.getElementById("mobileBar");
+            const mTurn = document.getElementById("mTurn");
+            const mStatus = document.getElementById("mStatus");
+            const mUndo = document.getElementById("mUndo");
+            const mPass = document.getElementById("mPass");
+            const mNew = document.getElementById("mNew");
+
+            const sheetOverlay = document.getElementById("sheetOverlay");
+            const sheetContent = document.getElementById("sheetContent");
+            const btnCloseSheet = document.getElementById("btnCloseSheet");
+
+            const controlsRoot = document.getElementById("controlsRoot");
+
+            // ------------------------------
+            // State
+            // ------------------------------
+            let board = createInitialBoard();
+            let current = BLACK;
+            let showHints = true;
+            let soundOn = true;
+            let volume = 0.65;
+            let learningOn = true;
+
+            let undoStack = [];
+            let busy = false;
+
+            // ------------------------------
+            // Adaptive Learning
+            // ------------------------------
+            const LS_KEY = "othello_human_profile_v1";
+
+            function defaultProfile() {
+                return {
+                    games: 0,
+                    moves: 0,
+                    corners: 0,
+                    edges: 0,
+                    xSquares: 0,
+                    greedy: 0,
+                    mobilityPref: 0,
+                    totalConsidered: 0,
+                };
+            }
+
+            function loadProfile() {
+                try {
+                    const raw = localStorage.getItem(LS_KEY);
+                    if (!raw) return defaultProfile();
+                    const p = JSON.parse(raw);
+                    return { ...defaultProfile(), ...p };
+                } catch {
+                    return defaultProfile();
+                }
+            }
+
+            function saveProfile(p) {
+                try { localStorage.setItem(LS_KEY, JSON.stringify(p)); } catch { }
+            }
+
+            let profile = loadProfile();
+
+            function resetLearning() {
+                profile = defaultProfile();
+                saveProfile(profile);
+                updateProfileBadges();
+            }
+
+            function pct(n, d) {
+                if (!d) return 0;
+                return Math.round((n / d) * 100);
+            }
+
+            function updateProfileBadges() {
+                const d = Math.max(1, profile.totalConsidered);
+                kCorner.textContent = `Corner: ${pct(profile.corners, d)}%`;
+                kEdge.textContent = `Edge: ${pct(profile.edges, d)}%`;
+                kGreedy.textContent = `Greedy flips: ${pct(profile.greedy, d)}%`;
+                kMob.textContent = `Mobility: ${pct(profile.mobilityPref, d)}%`;
+            }
+
+            function isCorner(r, c) { return (r === 0 || r === 7) && (c === 0 || c === 7); }
+            function isEdge(r, c) { if (isCorner(r, c)) return false; return (r === 0 || r === 7 || c === 0 || c === 7); }
+            function isXSq(r, c) { return (r === 1 && c === 1) || (r === 1 && c === 6) || (r === 6 && c === 1) || (r === 6 && c === 6); }
+
+            function learnFromHumanMove(chosenMove, allLegalMoves, bBeforeMove) {
+                if (!learningOn) return;
+
+                profile.moves += 1;
+
+                if (allLegalMoves.length >= 2) {
+                    profile.totalConsidered += 1;
+
+                    const { r, c, flips } = chosenMove;
+
+                    if (isCorner(r, c)) profile.corners += 1;
+                    if (isEdge(r, c)) profile.edges += 1;
+                    if (isXSq(r, c)) profile.xSquares += 1;
+
+                    let maxFlips = 0;
+                    for (const m of allLegalMoves) maxFlips = Math.max(maxFlips, m.flips.length);
+                    if (flips.length === maxFlips) profile.greedy += 1;
+
+                    let bestMinOpp = Infinity;
+                    for (const m of allLegalMoves) {
+                        const nb = applyMove(bBeforeMove, m, BLACK);
+                        const oppMoves = getLegalMoves(nb, WHITE).length;
+                        bestMinOpp = Math.min(bestMinOpp, oppMoves);
+                    }
+                    const chosenNb = applyMove(bBeforeMove, chosenMove, BLACK);
+                    const chosenOpp = getLegalMoves(chosenNb, WHITE).length;
+                    if (chosenOpp === bestMinOpp) profile.mobilityPref += 1;
+                }
+
+                saveProfile(profile);
+                updateProfileBadges();
+            }
+
+            function profileSignal() {
+                const d = Math.max(1, profile.totalConsidered);
+                const cornerRate = profile.corners / d;
+                const edgeRate = profile.edges / d;
+                const greedyRate = profile.greedy / d;
+                const mobRate = profile.mobilityPref / d;
+                const xRate = profile.xSquares / d;
+
+                const strength = Math.min(1, 0.25 + profile.games * 0.08);
+                return { strength, cornerRate, edgeRate, greedyRate, mobRate, xRate };
+            }
+
+            // ------------------------------
+            // Audio (WebAudio)
+            // ------------------------------
+            let audioCtx = null;
+            function ensureAudio() {
+                if (!soundOn) return;
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === "suspended") audioCtx.resume().catch(() => { });
+            }
+
+            function beep(type) {
+                if (!soundOn) return;
+                ensureAudio();
+                if (!audioCtx) return;
+
+                const now = audioCtx.currentTime;
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+
+                o.type = (type === "flip" || type === "win") ? "sine" : "triangle";
+
+                let f0 = 440, f1 = 440, dur = 0.08, vol = volume;
+
+                if (type === "move") { f0 = 520; f1 = 760; dur = 0.06; vol *= 0.75; }
+                else if (type === "flip") { f0 = 360; f1 = 520; dur = 0.10; vol *= 0.70; }
+                else if (type === "invalid") { f0 = 170; f1 = 130; dur = 0.11; vol *= 0.70; }
+                else if (type === "pass") { f0 = 260; f1 = 260; dur = 0.08; vol *= 0.60; }
+                else if (type === "win") { f0 = 520; f1 = 980; dur = 0.16; vol *= 0.85; }
+                else if (type === "lose") { f0 = 220; f1 = 160; dur = 0.16; vol *= 0.85; }
+                else if (type === "draw") { f0 = 320; f1 = 320; dur = 0.14; vol *= 0.75; }
+
+                o.frequency.setValueAtTime(f0, now);
+                o.frequency.exponentialRampToValueAtTime(Math.max(1, f1), now + dur);
+
+                g.gain.setValueAtTime(0.0001, now);
+                g.gain.exponentialRampToValueAtTime(Math.max(0.0002, vol), now + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+                o.connect(g);
+                g.connect(audioCtx.destination);
+
+                o.start(now);
+                o.stop(now + dur + 0.02);
+            }
+
+            function chordWinLose(isWin) {
+                if (!soundOn) return;
+                ensureAudio();
+                const seq = isWin ? ["win", "flip", "move"] : ["lose", "invalid", "pass"];
+                let t = 0;
+                seq.forEach((k) => { setTimeout(() => beep(k), t); t += 130; });
+            }
+
+            // ------------------------------
+            // Board logic
+            // ------------------------------
+            function createInitialBoard() {
+                const b = Array.from({ length: 8 }, () => Array(8).fill(EMPTY));
+                b[3][3] = WHITE; b[3][4] = BLACK;
+                b[4][3] = BLACK; b[4][4] = WHITE;
+                return b;
+            }
+            function cloneBoard(b) { return b.map(row => row.slice()); }
+            function inBounds(r, c) { return r >= 0 && r < 8 && c >= 0 && c < 8; }
+            function opponent(p) { return p === BLACK ? WHITE : BLACK; }
+
+            function countPieces(b) {
+                let black = 0, white = 0;
+                for (let r = 0; r < 8; r++) {
+                    for (let c = 0; c < 8; c++) {
+                        if (b[r][c] === BLACK) black++;
+                        else if (b[r][c] === WHITE) white++;
+                    }
+                }
+                return { black, white };
+            }
+
+            function getFlips(b, r, c, p) {
+                if (!inBounds(r, c) || b[r][c] !== EMPTY) return [];
+                const opp = opponent(p);
+                let flips = [];
+
+                for (const [dr, dc] of DIRS) {
+                    let rr = r + dr, cc = c + dc;
+                    let line = [];
+                    while (inBounds(rr, cc) && b[rr][cc] === opp) {
+                        line.push([rr, cc]);
+                        rr += dr; cc += dc;
+                    }
+                    if (line.length && inBounds(rr, cc) && b[rr][cc] === p) {
+                        flips = flips.concat(line);
+                    }
+                }
+                return flips;
+            }
+
+            function getLegalMoves(b, p) {
+                const moves = [];
+                for (let r = 0; r < 8; r++) {
+                    for (let c = 0; c < 8; c++) {
+                        const flips = getFlips(b, r, c, p);
+                        if (flips.length) moves.push({ r, c, flips });
+                    }
+                }
+                return moves;
+            }
+
+            function applyMove(b, move, p) {
+                const nb = cloneBoard(b);
+                nb[move.r][move.c] = p;
+                for (const [rr, cc] of move.flips) nb[rr][cc] = p;
+                return nb;
+            }
+
+            function gameOver(b) {
+                return getLegalMoves(b, BLACK).length === 0 && getLegalMoves(b, WHITE).length === 0;
+            }
+
+            // ------------------------------
+            // AI evaluation (WHITE perspective)
+            // ------------------------------
+            function evaluate(b) {
+                const { black, white } = countPieces(b);
+                const diff = white - black;
+
+                let positional = 0;
+                for (let r = 0; r < 8; r++) {
+                    for (let c = 0; c < 8; c++) {
+                        if (b[r][c] === WHITE) positional += WEIGHTS[r][c];
+                        else if (b[r][c] === BLACK) positional -= WEIGHTS[r][c];
+                    }
+                }
+
+                const mobW = getLegalMoves(b, WHITE).length;
+                const mobB = getLegalMoves(b, BLACK).length;
+                const mobility = (mobW - mobB) * 6.5;
+
+                const corners = [b[0][0], b[0][7], b[7][0], b[7][7]];
+                let cornerScore = 0;
+                for (const x of corners) {
+                    if (x === WHITE) cornerScore += 40;
+                    else if (x === BLACK) cornerScore -= 40;
+                }
+
+                const filled = black + white;
+                const endWeight = filled > 52 ? 2.3 : filled > 44 ? 1.7 : 1.0;
+
+                const style = aiStyleSel.value;
+                let styleBias = 0;
+                if (style === "aggressive") styleBias = diff * 1.1;
+                if (style === "defensive") styleBias = cornerScore * 0.45 + mobility * 0.35;
+
+                let counterBias = 0;
+                if (learningOn && style === "counter") {
+                    const s = profileSignal();
+                    const k = 55 * s.strength;
+
+                    counterBias += cornerScore * (0.22 + 0.45 * s.cornerRate);
+                    counterBias += positional * (0.06 + 0.10 * s.edgeRate);
+                    counterBias += mobility * (0.18 + 0.35 * s.greedyRate);
+                    counterBias += (diff * 0.25 * endWeight) * (0.10 + 0.25 * s.mobRate);
+                    counterBias += (cornerScore + positional * 0.15) * (0.10 + 0.40 * s.xRate);
+
+                    counterBias *= (k / 100);
+                }
+
+                return (
+                    positional * 1.05 +
+                    mobility * 1.00 +
+                    cornerScore * 1.18 +
+                    (diff * 0.75 * endWeight) +
+                    styleBias +
+                    counterBias
+                );
+            }
+
+            function depthFromDifficulty() {
+                const d = parseInt(difficultySel.value, 10);
+                return Math.min(6, 1 + d);
+            }
+
+            function orderMoves(moves) {
+                return moves.slice().sort((a, b) => {
+                    const aCorner = isCorner(a.r, a.c);
+                    const bCorner = isCorner(b.r, b.c);
+                    if (aCorner && !bCorner) return -1;
+                    if (!aCorner && bCorner) return 1;
+
+                    const ax = isXSq(a.r, a.c);
+                    const bx = isXSq(b.r, b.c);
+                    if (ax && !bx) return 1;
+                    if (!ax && bx) return -1;
+
+                    const aw = WEIGHTS[a.r][a.c];
+                    const bw = WEIGHTS[b.r][b.c];
+                    if (bw !== aw) return bw - aw;
+
+                    return (b.flips.length - a.flips.length);
+                });
+            }
+
+            function minimax(b, depth, alpha, beta, playerToMove) {
+                if (depth === 0 || gameOver(b)) {
+                    return { score: evaluate(b) };
+                }
+
+                const moves = getLegalMoves(b, playerToMove);
+                if (moves.length === 0) {
+                    return minimax(b, depth - 1, alpha, beta, opponent(playerToMove));
+                }
+
+                const ordered = orderMoves(moves);
+
+                if (playerToMove === WHITE) {
+                    let best = { score: -Infinity, move: null };
+                    for (const m of ordered) {
+                        const nb = applyMove(b, m, WHITE);
+                        const res = minimax(nb, depth - 1, alpha, beta, BLACK);
+                        if (res.score > best.score) best = { score: res.score, move: m };
+                        alpha = Math.max(alpha, best.score);
+                        if (beta <= alpha) break;
+                    }
+                    return best;
+                } else {
+                    let best = { score: Infinity, move: null };
+                    for (const m of ordered) {
+                        const nb = applyMove(b, m, BLACK);
+                        const res = minimax(nb, depth - 1, alpha, beta, WHITE);
+                        if (res.score < best.score) best = { score: res.score, move: m };
+                        beta = Math.min(beta, best.score);
+                        if (beta <= alpha) break;
+                    }
+                    return best;
+                }
+            }
+
+            // ------------------------------
+            // Mobile: move controls into sheet (same nodes)
+            // ------------------------------
+            function isMobileLayout() {
+                return window.matchMedia("(max-width: 940px)").matches;
+            }
+
+            function openSheet() {
+                attachControlsIntoSheet();
+                sheetOverlay.classList.add("show");
+                sheetOverlay.setAttribute("aria-hidden", "false");
+                beep("move");
+            }
+
+            function closeSheet() {
+                sheetOverlay.classList.remove("show");
+                sheetOverlay.setAttribute("aria-hidden", "true");
+            }
+
+            function attachControlsIntoSheet() {
+                if (!controlsRoot) return;
+                // Move the actual controls DOM inside the sheet on mobile
+                if (isMobileLayout()) {
+                    sheetContent.innerHTML = "";
+                    sheetContent.appendChild(controlsRoot);
+                    controlsRoot.style.display = "grid";
+                }
+            }
+
+            function returnControlsToDesktop() {
+                if (!controlsRoot) return;
+                if (!isMobileLayout()) {
+                    // Put controls back into wrap as the right column element
+                    const wrap = document.querySelector(".wrap");
+                    if (wrap && !wrap.contains(controlsRoot)) {
+                        wrap.appendChild(controlsRoot);
+                    }
+                    controlsRoot.style.removeProperty("display");
+                }
+            }
+
+            function refreshMobileHUD() {
+                if (!isMobileLayout()) return;
+                mTurn.textContent = `Turn: ${current === BLACK ? "You (Black)" : "AI (White)"}`;
+                const txt = (elStatus.textContent || elStatus.innerText || "—").trim();
+                mStatus.textContent = txt || "—";
+            }
+
+            // ------------------------------
+            // UI: Build board
+            // ------------------------------
+            const cells = [];
+            function buildBoard() {
+                elBoard.innerHTML = "";
+                cells.length = 0;
+
+                for (let r = 0; r < 8; r++) {
+                    for (let c = 0; c < 8; c++) {
+                        const cell = document.createElement("div");
+                        cell.className = "cell";
+                        cell.setAttribute("role", "gridcell");
+                        cell.dataset.r = r;
+                        cell.dataset.c = c;
+
+                        const hint = document.createElement("div");
+                        hint.className = "hint";
+                        cell.appendChild(hint);
+
+                        cell.addEventListener("click", () => onCellTap(r, c));
+                        cell.addEventListener("touchstart", () => ensureAudio(), { passive: true });
+
+                        elBoard.appendChild(cell);
+                        cells.push(cell);
+                    }
+                }
+            }
+
+            function render() {
+                const legal = getLegalMoves(board, current);
+                const { black, white } = countPieces(board);
+
+                elScoreB.textContent = black;
+                elScoreW.textContent = white;
+
+                if (elTurnPill) {
+                    elTurnPill.textContent = `Turn: ${current === BLACK ? "You (Black)" : "AI (White)"}`;
+                }
+
+                for (const cell of cells) {
+                    const r = +cell.dataset.r;
+                    const c = +cell.dataset.c;
+                    const v = board[r][c];
+
+                    while (cell.children.length > 1) cell.removeChild(cell.lastChild);
+
+                    if (v === BLACK || v === WHITE) {
+                        const piece = document.createElement("div");
+                        piece.className = "piece " + (v === BLACK ? "black" : "white");
+                        cell.appendChild(piece);
+                    }
+                    cell.classList.remove("hint-on");
+                }
+
+                if (showHints && current === BLACK && !busy) {
+                    const set = new Set(legal.map(m => `${m.r},${m.c}`));
+                    for (const cell of cells) {
+                        const key = `${cell.dataset.r},${cell.dataset.c}`;
+                        if (set.has(key)) cell.classList.add("hint-on");
+                    }
+                    elHintPill.textContent = "Hints: On";
+                } else {
+                    elHintPill.textContent = "Hints: Off";
+                }
+
+                if (gameOver(board)) {
+                    const res = resultText();
+                    elStatus.innerHTML = res.html;
+                    refreshMobileHUD();
+                    return;
+                }
+
+                if (busy) {
+                    elStatus.textContent = "AI is thinking…";
+                    refreshMobileHUD();
+                    return;
+                }
+
+                if (legal.length === 0) {
+                    elStatus.textContent = current === BLACK
+                        ? "No legal moves for you. Tap Pass."
+                        : "AI has no legal moves. It will pass.";
+                } else {
+                    elStatus.textContent = current === BLACK
+                        ? "Tap a highlighted square to place your disc."
+                        : "AI is ready.";
+                }
+
+                refreshMobileHUD();
+            }
+
+            function resultText() {
+                const { black, white } = countPieces(board);
+                if (black > white) return { html: `Game over. You win <b>${black}–${white}</b>.`, winner: "human" };
+                if (white > black) return { html: `Game over. AI wins <b>${white}–${black}</b>.`, winner: "ai" };
+                return { html: `Game over. It’s a draw <b>${black}–${white}</b>.`, winner: "draw" };
+            }
+
+            // ------------------------------
+            // Turns
+            // ------------------------------
+            async function onCellTap(r, c) {
+                if (busy || gameOver(board) || current !== BLACK) return;
+
+                const legal = getLegalMoves(board, BLACK);
+                const move = legal.find(m => m.r === r && m.c === c);
+                if (!move) { beep("invalid"); return; }
+
+                undoStack.push({ board: cloneBoard(board), current });
+                if (undoStack.length > 50) undoStack.shift();
+
+                learnFromHumanMove(move, legal, board);
+                await doMove(move, BLACK);
+                await maybeAiTurn();
+            }
+
+            async function doMove(move, player) {
+                board = applyMove(board, move, player);
+                beep("move");
+                setTimeout(() => beep("flip"), 45);
+
+                current = opponent(player);
+                render();
+
+                const targets = [[move.r, move.c], ...move.flips];
+                for (const [rr, cc] of targets) {
+                    const idx = rr * 8 + cc;
+                    const piece = cells[idx].querySelector(".piece");
+                    if (piece) {
+                        piece.classList.remove("flip");
+                        void piece.offsetWidth;
+                        piece.classList.add("flip");
+                    }
+                }
+                await wait(190);
+            }
+
+            async function maybeAiTurn() {
+                if (gameOver(board)) {
+                    finishGameSounds();
+                    render();
+                    return;
+                }
+
+                if (current !== WHITE) return;
+
+                const moves = getLegalMoves(board, WHITE);
+                if (moves.length === 0) {
+                    beep("pass");
+                    current = BLACK;
+                    render();
+                    return;
+                }
+
+                busy = true;
+                render();
+                await wait(40);
+
+                const depth = depthFromDifficulty();
+                const best = minimax(board, depth, -Infinity, Infinity, WHITE).move;
+
+                await wait(120);
+
+                if (best) {
+                    await doMove(best, WHITE);
+                }
+
+                busy = false;
+                render();
+
+                if (gameOver(board)) {
+                    finishGameSounds();
+                    render();
+                }
+            }
+
+            function finishGameSounds() {
+                const res = resultText();
+                if (res.winner === "human") chordWinLose(true);
+                else if (res.winner === "ai") chordWinLose(false);
+                else beep("draw");
+
+                if (learningOn) {
+                    profile.games += 1;
+                    saveProfile(profile);
+                    updateProfileBadges();
+                }
+            }
+
+            function passTurn() {
+                if (busy || gameOver(board)) return;
+
+                const legal = getLegalMoves(board, current);
+                if (legal.length !== 0) {
+                    beep("invalid");
+                    elStatus.textContent = "You can’t pass — you still have legal moves.";
+                    refreshMobileHUD();
+                    return;
+                }
+
+                beep("pass");
+                current = opponent(current);
+                render();
+
+                if (current === WHITE) maybeAiTurn();
+            }
+
+            function undo() {
+                if (busy) return;
+                if (!undoStack.length) { beep("invalid"); return; }
+                const snap = undoStack.pop();
+                board = cloneBoard(snap.board);
+                current = snap.current;
+                beep("pass");
+                render();
+            }
+
+            function newGame() {
+                busy = false;
+                undoStack = [];
+                board = createInitialBoard();
+                current = BLACK;
+                beep("move");
+                render();
+            }
+
+            function wait(ms) { return new Promise(res => setTimeout(res, ms)); }
+
+            // ------------------------------
+            // Toggles
+            // ------------------------------
+            function setSwitch(el, on) { el.classList.toggle("on", !!on); }
+
+            toggleHints.addEventListener("click", () => {
+                showHints = !showHints;
+                setSwitch(hintsSwitch, showHints);
+                beep("move");
+                render();
+            });
+
+            toggleSound.addEventListener("click", () => {
+                soundOn = !soundOn;
+                setSwitch(soundSwitch, soundOn);
+                if (soundOn) beep("move");
+            });
+
+            toggleLearn.addEventListener("click", () => {
+                learningOn = !learningOn;
+                setSwitch(learnSwitch, learningOn);
+                beep("move");
+                render();
+            });
+
+            volumeRange.addEventListener("input", () => {
+                volume = Math.max(0, Math.min(1, (+volumeRange.value) / 100));
+            });
+
+            difficultySel.addEventListener("change", () => {
+                beep("move");
+                if (current === WHITE && !busy) maybeAiTurn();
+            });
+
+            aiStyleSel.addEventListener("change", () => {
+                beep("move");
+                if (current === WHITE && !busy) maybeAiTurn();
+            });
+
+            btnNew.addEventListener("click", newGame);
+            btnPass.addEventListener("click", passTurn);
+            btnUndo.addEventListener("click", undo);
+
+            btnResetLearn.addEventListener("click", () => {
+                resetLearning();
+                beep("move");
+            });
+
+            // Mobile buttons map to same logic
+            mUndo.addEventListener("click", undo);
+            mPass.addEventListener("click", passTurn);
+            mNew.addEventListener("click", newGame);
+
+            // Menu opens sheet
+            btnMobileMenu.addEventListener("click", openSheet);
+
+            btnCloseSheet.addEventListener("click", closeSheet);
+            sheetOverlay.addEventListener("click", (e) => { if (e.target === sheetOverlay) closeSheet(); });
+
+            // Desktop keyboard
+            window.addEventListener("keydown", (e) => {
+                if (e.key === "n" || e.key === "N") newGame();
+                if (e.key === "p" || e.key === "P") passTurn();
+                if (e.key === "u" || e.key === "U") undo();
+            });
+
+            // Resize handling
+            window.addEventListener("resize", () => {
+                if (isMobileLayout()) {
+                    if (sheetOverlay.classList.contains("show")) attachControlsIntoSheet();
+                    refreshMobileHUD();
+                } else {
+                    closeSheet();
+                    returnControlsToDesktop();
+                }
+            });
+
+            // ------------------------------
+            // PWA: Service Worker registration
+            // ------------------------------
+            async function registerSW() {
+                if (!("serviceWorker" in navigator)) {
+                    pwaStatus.textContent = "Offline support: not available in this browser.";
+                    return;
+                }
+                try {
+                    const reg = await navigator.serviceWorker.register("./sw.js");
+                    pwaStatus.textContent = "Offline support: enabled (service worker active).";
+                    if (reg.waiting) pwaStatus.textContent = "Update available: reload to apply.";
+                } catch (e) {
+                    pwaStatus.textContent = "Offline support: failed to register service worker.";
+                }
+            }
+
+            // ------------------------------
+            // PWA: Install prompt
+            // ------------------------------
+            let deferredPrompt = null;
+
+            function showInstallUI() {
+                btnInstall.style.display = "";
+                installBar.classList.add("show");
+            }
+            function hideInstallUI() {
+                btnInstall.style.display = "none";
+                installBar.classList.remove("show");
+            }
+
+            window.addEventListener("beforeinstallprompt", (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                showInstallUI();
+            });
+
+            async function doInstall() {
+                if (!deferredPrompt) return;
+                beep("move");
+                deferredPrompt.prompt();
+                await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                hideInstallUI();
+            }
+
+            btnInstall.addEventListener("click", doInstall);
+            btnInstallToast.addEventListener("click", doInstall);
+            btnCloseToast.addEventListener("click", hideInstallUI);
+
+            window.addEventListener("appinstalled", () => {
+                deferredPrompt = null;
+                hideInstallUI();
+                pwaStatus.textContent = "App installed. Offline mode is available.";
+                beep("win");
+            });
+
+            // ------------------------------
+            // Init
+            // ------------------------------
+            buildBoard();
+            setSwitch(hintsSwitch, showHints);
+            setSwitch(soundSwitch, soundOn);
+            setSwitch(learnSwitch, learningOn);
+            volume = (+volumeRange.value) / 100;
+            updateProfileBadges();
+            render();
+
+            registerSW();
+
+            // Initial layout placement
+            if (isMobileLayout()) {
+                refreshMobileHUD();
+            } else {
+                returnControlsToDesktop();
+            }
+        })();
+    </script>
+</body>
+
+</html>
