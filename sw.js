@@ -11,6 +11,9 @@ const APP_SHELL = [
     "./icons/icon-512.png",
 ];
 
+// Normalize app-shell URLs for robust matching (GitHub Pages subfolder safe)
+const SHELL_URLS = new Set(APP_SHELL.map((p) => new URL(p, self.location).href));
+
 self.addEventListener("install", (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
@@ -32,26 +35,30 @@ self.addEventListener("fetch", (event) => {
     const url = new URL(req.url);
 
     // Only handle same-origin
-    if (url.origin !== location.origin) return;
+    if (url.origin !== self.location.origin) return;
 
-    // Navigation: try cache, fallback to network, fallback to cached index
+    // Navigation: network-first, fallback to cached index.html
     if (req.mode === "navigate") {
         event.respondWith((async () => {
             const cache = await caches.open(CACHE_NAME);
-            const cached = await cache.match("./index.html");
             try {
                 const fresh = await fetch(req);
-                cache.put(req, fresh.clone());
+                // IMPORTANT: always update the cached index.html under a stable key
+                await cache.put(new Request("./index.html"), fresh.clone());
                 return fresh;
             } catch {
-                return cached || Response.error();
+                const cached = await cache.match(new Request("./index.html"));
+                return cached || new Response("Offline", {
+                    status: 200,
+                    headers: { "Content-Type": "text/plain" }
+                });
             }
         })());
         return;
     }
 
     // For static files in shell: cache-first
-    if (APP_SHELL.some(p => url.pathname.endsWith(p.replace("./", "")))) {
+    if (SHELL_URLS.has(req.url)) {
         event.respondWith((async () => {
             const cache = await caches.open(CACHE_NAME);
             const hit = await cache.match(req);
@@ -63,7 +70,7 @@ self.addEventListener("fetch", (event) => {
         return;
     }
 
-    // Default: network-first
+    // Default: network-first, fallback to cache
     event.respondWith((async () => {
         const cache = await caches.open(CACHE_NAME);
         try {
@@ -72,7 +79,7 @@ self.addEventListener("fetch", (event) => {
             return fresh;
         } catch {
             const hit = await cache.match(req);
-            return hit || Response.error();
+            return hit || new Response("", { status: 504 });
         }
     })());
 });
