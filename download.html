@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>Download Smart Othello</title>
+    <meta name="theme-color" content="#070a10" />
+    <style>
+        :root {
+            --bg0: #05070c;
+            --bg1: #070a10;
+            --card: rgba(16, 24, 38, .62);
+            --stroke: rgba(255, 255, 255, .10);
+            --text: #eaf1ff;
+            --muted: #a7b7d6;
+            --accent: #79a8ff;
+            --accent2: #66f0c2;
+            --r: 18px;
+            --shadow: 0 18px 50px rgba(0, 0, 0, .45);
+            --shadow2: 0 12px 26px rgba(0, 0, 0, .35);
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html,
+        body {
+            height: 100%
+        }
+
+        body {
+            margin: 0;
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+            color: var(--text);
+            background:
+                radial-gradient(900px 600px at 15% -10%, rgba(121, 168, 255, .22), transparent 55%),
+                radial-gradient(900px 650px at 95% 0%, rgba(102, 240, 194, .14), transparent 58%),
+                radial-gradient(900px 650px at 60% 120%, rgba(251, 191, 36, .10), transparent 55%),
+                linear-gradient(180deg, var(--bg0), var(--bg1));
+            -webkit-text-size-adjust: 100%;
+            touch-action: manipulation;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+        }
+
+        .card {
+            width: min(860px, 100%);
+            border: 1px solid var(--stroke);
+            background: var(--card);
+            backdrop-filter: blur(12px);
+            border-radius: var(--r);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .head {
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, .06);
+            background: linear-gradient(180deg, rgba(255, 255, 255, .05), transparent);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background:
+                radial-gradient(circle at 30% 30%, rgba(121, 168, 255, .95), rgba(121, 168, 255, .12) 56%, transparent 57%),
+                radial-gradient(circle at 70% 75%, rgba(102, 240, 194, .90), rgba(102, 240, 194, .10) 56%, transparent 57%),
+                linear-gradient(135deg, rgba(255, 255, 255, .10), rgba(255, 255, 255, 0));
+            box-shadow: 0 12px 22px rgba(0, 0, 0, .28);
+            flex: 0 0 auto;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 950;
+            letter-spacing: .2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sub {
+            margin: 2px 0 0;
+            font-size: 12px;
+            color: var(--muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .btn {
+            appearance: none;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(12, 18, 30, .65);
+            color: var(--text);
+            border-radius: 14px;
+            padding: 10px 12px;
+            font-weight: 900;
+            font-size: 13px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            box-shadow: var(--shadow2);
+            transition: transform .12s ease, border-color .12s ease, background .12s ease, filter .12s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            border-color: rgba(121, 168, 255, .45);
+            background: rgba(16, 24, 38, .78)
+        }
+
+        .btn:active {
+            transform: scale(.98)
+        }
+
+        .btn.primary {
+            border-color: rgba(121, 168, 255, .45);
+            background: linear-gradient(180deg, rgba(121, 168, 255, .24), rgba(121, 168, 255, .14));
+        }
+
+        .btn.primary:hover {
+            border-color: rgba(121, 168, 255, .65);
+            filter: brightness(1.03)
+        }
+
+        .body {
+            padding: 16px
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1.1fr .9fr;
+            gap: 14px;
+            align-items: start;
+        }
+
+        @media (max-width:900px) {
+            .grid {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .panel {
+            border: 1px solid rgba(255, 255, 255, .08);
+            background: rgba(12, 18, 30, .40);
+            border-radius: 16px;
+            padding: 14px;
+        }
+
+        .title {
+            font-size: 13px;
+            font-weight: 950;
+            margin: 0 0 10px;
+            letter-spacing: .2px;
+        }
+
+        .small {
+            font-size: 12.5px;
+            color: rgba(167, 183, 214, .95);
+            line-height: 1.55
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+            align-items: center;
+        }
+
+        .tag {
+            padding: 8px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, .10);
+            background: rgba(12, 18, 30, .45);
+            font-size: 12px;
+            font-weight: 900;
+            color: var(--muted);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        ol {
+            margin: 10px 0 0 18px;
+            padding: 0
+        }
+
+        li {
+            margin: 6px 0
+        }
+
+        .warn {
+            margin-top: 10px;
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(251, 191, 36, .30);
+            background: rgba(251, 191, 36, .08);
+            color: rgba(255, 240, 205, .95);
+            font-size: 12.5px;
+            line-height: 1.5;
+            font-weight: 750;
+        }
+
+        .footer {
+            padding: 12px 16px;
+            border-top: 1px solid rgba(255, 255, 255, .06);
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .link {
+            color: rgba(121, 168, 255, .95);
+            text-decoration: none;
+            font-weight: 900
+        }
+
+        .link:hover {
+            text-decoration: underline
+        }
+
+        /* ------------------------------
+       Mobile improvements ONLY
+       Desktop layout stays same
+    ------------------------------ */
+        @media (max-width:520px) {
+            body {
+                padding: 12px
+            }
+
+            .head {
+                padding: 12px 12px
+            }
+
+            .body {
+                padding: 12px
+            }
+
+            .logo {
+                width: 36px;
+                height: 36px;
+                border-radius: 13px
+            }
+
+            h1 {
+                font-size: 13.5px
+            }
+
+            .sub {
+                display: none
+            }
+
+            /* keep header clean on mobile */
+
+            /* Make primary action big + full width on mobile */
+            .row.actions {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .row.actions .btn {
+                width: 100%;
+                padding: 12px 14px;
+                border-radius: 16px;
+                font-size: 13.5px;
+            }
+
+            /* Keep small badges tidy */
+            .row.meta {
+                gap: 8px;
+            }
+
+            /* Better list spacing on small screens */
+            ol {
+                margin-left: 18px
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <div class="head">
+            <div class="brand">
+                <div class="logo" aria-hidden="true"></div>
+                <div style="min-width:0">
+                    <h1>Smart Othello — Downloads</h1>
+                    <div class="sub">Android APK and install steps</div>
+                </div>
+            </div>
+            <a class="btn" href="./" title="Back to game">Back to Game</a>
+        </div>
+
+        <div class="body">
+            <div class="grid">
+                <div class="panel">
+                    <div class="title">Android App (APK)</div>
+                    <div class="small">
+                        Download the APK and install it on your Android phone.
+                    </div>
+
+                    <div class="row actions">
+                        <a class="btn primary" id="btnApk" href="./downloads/SmartOthello.apk" download>
+                            Download APK
+                        </a>
+                        <a class="btn" href="./" title="Open the game in browser">
+                            Play in Browser
+                        </a>
+                    </div>
+
+                    <div class="warn" id="androidNote" style="display:none">
+                        If the download doesn’t start, open this page in Chrome and try again.
+                    </div>
+
+                    <div class="row meta" style="margin-top:12px">
+                        <span class="tag">Offline play supported</span>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="title">How to Install</div>
+                    <div class="small">
+                        <ol>
+                            <li>Download the APK.</li>
+                            <li>Open the file from your browser or Downloads app.</li>
+                            <li>If blocked: Settings → Security/Privacy → Install unknown apps → allow your browser/file
+                                manager.</li>
+                            <li>Tap Install.</li>
+                            <li>Open the app from your launcher.</li>
+                        </ol>
+
+                        <div class="warn" style="margin-top:12px">
+                            Tip: Open the app once with internet ON, then it will work offline after caching.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="small">
+                <a class="link" href="./">Back to Smart Othello</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            // Only show the Chrome hint on Android (no "device" text shown)
+            const ua = navigator.userAgent || "";
+            const isAndroid = /Android/i.test(ua);
+            const androidNote = document.getElementById("androidNote");
+            if (isAndroid) androidNote.style.display = "block";
+        })();
+    </script>
+</body>
+
+</html>
